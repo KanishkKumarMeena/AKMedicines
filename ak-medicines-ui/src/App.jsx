@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard';
 import Inventory from './pages/Inventory';
 import Transactions from './pages/Transactions';
 import Alerts from './pages/Alerts';
+import logo from './assets/AK.svg';
 
 function Navbar() {
   const location = useLocation();
@@ -18,9 +19,10 @@ function Navbar() {
   ];
 
   return (
-    <nav className="bg-blue-700 text-white shadow shrink-0">
+    <nav className="bg-[#00171f] text-white shadow shrink-0">
       <div className="max-w-6xl mx-auto px-4 flex justify-between items-center h-14">
         <Link to="/" className="font-bold text-lg flex items-center gap-2">
+          <img src={logo} alt="AK Medicines" className="h-7 w-7 rounded object-contain" />
           <span>AK Medicines</span>
         </Link>
         <div className="flex space-x-2">
@@ -31,8 +33,8 @@ function Navbar() {
                 key={link.path}
                 to={link.path}
                 className={`px-3 py-1.5 rounded text-sm font-medium transition ${isActive
-                  ? 'bg-blue-900 text-white'
-                  : 'text-blue-100 hover:bg-blue-600 hover:text-white'
+                  ? 'bg-[#5bf693] text-black'
+                  : 'text-blue-100 hover:bg-[#05383b] hover:text-white'
                   }`}
               >
                 {link.label}
