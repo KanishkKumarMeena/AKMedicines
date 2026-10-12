@@ -24,7 +24,7 @@ export default function Dashboard() {
         <div className="flex gap-2">
           <Link
             to="/transactions"
-            className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3.5 py-2 rounded font-medium shadow-xs"
+            className="bg-[#00171f] hover:bg-[#05383b] text-white text-sm px-3.5 py-2 rounded font-medium shadow-xs"
           >
             + Log Transaction
           </Link>
@@ -43,7 +43,7 @@ export default function Dashboard() {
           <div>
             <strong>Low Stock Alert:</strong> {lowStockCount} medicine(s) are currently running low or out of stock.
           </div>
-          <Link to="/alerts" className="text-blue-700 hover:underline font-semibold shrink-0">
+          <Link to="/alerts" className="text-[#00171f] hover:text-[#05383b] hover:underline font-semibold shrink-0">
             View Stock Alerts &rarr;
           </Link>
         </div>
@@ -82,7 +82,7 @@ export default function Dashboard() {
       <div className="bg-white border border-gray-300 rounded p-4 shadow-2xs">
         <div className="flex justify-between items-center mb-3">
           <h2 className="text-base font-bold text-gray-800">Recent Transactions</h2>
-          <Link to="/transactions" className="text-xs text-blue-600 hover:underline font-medium">
+          <Link to="/transactions" className="text-xs text-[#05383b] hover:text-[#00171f] hover:underline font-medium">
             View all ({transactions.length})
           </Link>
         </div>
