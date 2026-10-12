@@ -88,8 +88,8 @@ export default function Dashboard() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm border-collapse border border-gray-200">
-            <thead className="bg-gray-100 text-gray-700 font-semibold border-b border-gray-200">
+          <table className="w-full text-left text-sm border-collapse border border-gray-200 min-w-[500px]">
+            <thead className="bg-gray-100 text-gray-700 font-semibold border-b border-gray-200 whitespace-nowrap">
               <tr>
                 <th className="p-2.5 border border-gray-200">Date</th>
                 <th className="p-2.5 border border-gray-200">Type</th>

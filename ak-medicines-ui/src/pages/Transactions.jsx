@@ -162,8 +162,8 @@ export default function Transactions() {
         <div className="md:col-span-2">
           <div className="bg-white border border-gray-300 rounded p-4 shadow-2xs">
             <div className="overflow-x-auto max-h-[550px] overflow-y-auto">
-              <table className="w-full text-left text-sm border-collapse border border-gray-200">
-                <thead className="bg-gray-100 text-gray-700 font-semibold border-b border-gray-200 sticky top-0">
+              <table className="w-full text-left text-sm border-collapse border border-gray-200 min-w-[550px]">
+                <thead className="bg-gray-100 text-gray-700 font-semibold border-b border-gray-200 sticky top-0 whitespace-nowrap">
                   <tr>
                     <th className="p-2 border border-gray-200">Date/Time</th>
                     <th className="p-2 border border-gray-200">Type</th>

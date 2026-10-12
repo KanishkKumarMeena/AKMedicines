@@ -194,12 +194,12 @@ export default function Inventory() {
           className="border border-gray-300 rounded px-3 py-1.5 text-sm w-full sm:w-80 focus:outline-none focus:border-[#00171f]"
         />
 
-        <div className="flex gap-1.5 text-xs font-medium w-full sm:w-auto">
+        <div className="flex gap-1.5 text-xs font-medium w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
           {['ALL', 'AMPLE', 'LOW_STOCK', 'OUT_OF_STOCK'].map((status) => (
             <button
               key={status}
               onClick={() => setFilterStatus(status)}
-              className={`px-3 py-1.5 rounded border ${
+              className={`px-3 py-1.5 rounded border whitespace-nowrap ${
                 filterStatus === status
                   ? 'bg-[#00171f] text-white border-[#00171f] font-semibold'
                   : 'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100'
@@ -217,10 +217,10 @@ export default function Inventory() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white border border-gray-300 rounded overflow-hidden shadow-2xs">
-        <table className="w-full text-left text-sm border-collapse">
-          <thead className="bg-gray-100 text-gray-700 font-semibold border-b border-gray-300">
+      {/* Table with Horizontal Scroll */}
+      <div className="bg-white border border-gray-300 rounded overflow-x-auto shadow-2xs">
+        <table className="w-full text-left text-sm border-collapse min-w-[700px]">
+          <thead className="bg-gray-100 text-gray-700 font-semibold border-b border-gray-300 whitespace-nowrap">
             <tr>
               <th className="p-3 border-r border-gray-200">Brand Name</th>
               <th className="p-3 border-r border-gray-200">Active Salt / Formulation</th>
@@ -240,16 +240,16 @@ export default function Inventory() {
             ) : (
               filteredMedicines.map((med) => (
                 <tr key={med.id} className="border-b border-gray-200 hover:bg-gray-50">
-                  <td className="p-3 border-r border-gray-200 font-semibold text-gray-900">{med.name}</td>
+                  <td className="p-3 border-r border-gray-200 font-semibold text-gray-900 whitespace-nowrap">{med.name}</td>
                   <td className="p-3 border-r border-gray-200 text-gray-700">{med.salts}</td>
-                  <td className="p-3 border-r border-gray-200 text-gray-600">{med.category}</td>
-                  <td className="p-3 border-r border-gray-200 text-right font-mono text-gray-600">
+                  <td className="p-3 border-r border-gray-200 text-gray-600 whitespace-nowrap">{med.category}</td>
+                  <td className="p-3 border-r border-gray-200 text-right font-mono text-gray-600 whitespace-nowrap">
                     {med.minThreshold} {med.unit}
                   </td>
-                  <td className="p-3 border-r border-gray-200 text-right font-mono font-bold text-gray-900">
+                  <td className="p-3 border-r border-gray-200 text-right font-mono font-bold text-gray-900 whitespace-nowrap">
                     {med.currentStock} {med.unit}
                   </td>
-                  <td className="p-3 text-center">
+                  <td className="p-3 text-center whitespace-nowrap">
                     {med.status === 'AMPLE' && (
                       <span className="bg-green-100 text-green-800 text-xs px-2.5 py-0.5 rounded font-medium">
                         Ample

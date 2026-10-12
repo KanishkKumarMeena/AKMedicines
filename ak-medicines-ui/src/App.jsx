@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { InventoryProvider, useInventory } from './context/InventoryContext';
 import Dashboard from './pages/Dashboard';
@@ -9,6 +10,7 @@ import logo from './assets/AK.svg';
 function Navbar() {
   const location = useLocation();
   const { alertMedicines } = useInventory();
+  const [isOpen, setIsOpen] = useState(false);
   const alertCount = alertMedicines.length;
 
   const links = [
@@ -19,30 +21,93 @@ function Navbar() {
   ];
 
   return (
-    <nav className="bg-[#00171f] text-white shadow shrink-0">
+    <nav className="bg-[#00171f] text-white shadow shrink-0 z-20">
       <div className="max-w-6xl mx-auto px-4 flex justify-between items-center h-14">
-        <Link to="/" className="font-bold text-lg flex items-center gap-2">
+        <Link
+          to="/"
+          onClick={() => setIsOpen(false)}
+          className="font-bold text-lg flex items-center gap-2"
+        >
           <img src={logo} alt="AK Medicines" className="h-7 w-7 rounded object-contain" />
           <span>AK Medicines</span>
         </Link>
-        <div className="flex space-x-2">
+
+        {/* Desktop Navigation */}
+        <div className="hidden md:flex space-x-2">
           {links.map((link) => {
             const isActive = location.pathname === link.path;
             return (
               <Link
                 key={link.path}
                 to={link.path}
-                className={`px-3 py-1.5 rounded text-sm font-medium transition ${isActive
-                  ? 'bg-[#5bf693] text-black'
-                  : 'text-blue-100 hover:bg-[#05383b] hover:text-white'
-                  }`}
+                className={`px-3 py-1.5 rounded text-sm font-medium transition ${
+                  isActive
+                    ? 'bg-[#5bf693] text-black'
+                    : 'text-blue-100 hover:bg-[#05383b] hover:text-white'
+                }`}
               >
                 {link.label}
               </Link>
             );
           })}
         </div>
+
+        {/* Mobile Hamburger Button */}
+        <div className="md:hidden flex items-center">
+          <button
+            type="button"
+            onClick={() => setIsOpen(!isOpen)}
+            className="p-1.5 rounded text-gray-200 hover:text-white hover:bg-[#05383b] focus:outline-none cursor-pointer"
+            aria-label="Toggle navigation menu"
+          >
+            <svg
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              {isOpen ? (
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              ) : (
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              )}
+            </svg>
+          </button>
+        </div>
       </div>
+
+      {/* Mobile Dropdown Menu */}
+      {isOpen && (
+        <div className="md:hidden border-t border-[#05383b] bg-[#00171f] px-4 pt-2 pb-3 space-y-1">
+          {links.map((link) => {
+            const isActive = location.pathname === link.path;
+            return (
+              <Link
+                key={link.path}
+                to={link.path}
+                onClick={() => setIsOpen(false)}
+                className={`block px-3 py-2 rounded text-sm font-medium transition ${
+                  isActive
+                    ? 'bg-[#5bf693] text-black'
+                    : 'text-blue-100 hover:bg-[#05383b] hover:text-white'
+                }`}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
+        </div>
+      )}
     </nav>
   );
 }
