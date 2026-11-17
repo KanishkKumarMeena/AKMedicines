@@ -21,6 +21,7 @@ uv run python app.py
 | POST /api/transactions | Record RECEIVE or DISPENSE |
 | GET /api/vendors | Registered vendors and their formulations |
 | POST /api/vendors | Register a vendor and supplied formulations |
+| POST /api/users | Admin-only: register a user for a vendor |
 | GET /api/alerts | Low/depleted medicines with matching vendors |
 
 Create a medicine:
@@ -62,6 +63,22 @@ Register a vendor:
 }
 ```
 
+Vendor creation returns a generated vendor ID such as `GENE7890-7Q4M`. It uses
+the first four organization-name letters, the last four phone digits, and a
+random four-character suffix. Phone is required for vendor registration.
+
+Only JWTs with a `role` claim of `admin` can create users:
+
+```json
+{
+  "name": "Asha Patel",
+  "username": "asha.patel",
+  "email": "asha@example.com",
+  "password": "a-long-password",
+  "vendor_id": "GENE7890-7Q4M"
+}
+```
+
 Each vendor list entry is a complete formulation. Matching ignores capitalization, spacing and ingredient order, but requires the same ingredients. Stock below the threshold is low; zero is depleted; stock at or above the threshold is ample.
 
 Add email settings to your existing `.env`:
@@ -76,7 +93,14 @@ MAIL_PASSWORD=your-smtp-password
 MAIL_DEFAULT_SENDER=inventory@example.com
 ADMIN_EMAIL=admin@example.com
 ALERT_INTERVAL_HOURS=6
+JWT_SECRET=replace-with-a-long-random-secret
+JWT_ISSUER=ak-medicines-node
+JWT_AUDIENCE=ak-medicines-api
 ```
+
+All `/api` routes require a JWT issued by the Node proxy. The proxy must send
+it as `Authorization: Bearer <token>`. Tokens use HS256 and must contain `sub`
+and `exp` claims, with the configured issuer and audience.
 
 Emails include stock, thresholds, formulations and matching vendor contacts. No email is sent when stock is healthy. Missing email configuration or delivery failures are logged, and the next scheduled run still happens. Persistent shortages appear in each six-hour email. The first scheduled check happens after the interval; to send immediately:
 

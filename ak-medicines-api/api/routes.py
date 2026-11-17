@@ -1,13 +1,20 @@
 from flask import Blueprint, abort, jsonify, request
 from sqlalchemy import select
+from werkzeug.security import generate_password_hash
 
 from config import db
+from api.auth import authenticate, require_roles
 from inventory import current_stock, inventory, low_stock_alerts, medicine_details, vendor_details
-from models import Medicine, Salt, Transaction, Vendor, normalize_salt
-from api.schema import MedicineSchema, TransactionSchema, VendorSchema
+from models import Medicine, Salt, Transaction, User, Vendor, generate_vendor_id, normalize_salt
+from api.schema import MedicineSchema, TransactionSchema, UserSchema, VendorSchema
 
 
 api = Blueprint("api", __name__, url_prefix="/api")
+
+
+@api.before_request
+def authenticate_request():
+    authenticate()
 
 
 def read_data(schema):
@@ -90,16 +97,40 @@ def add_vendor():
     """API to register the NGO as the vendor"""
     data = read_data(VendorSchema())
     ingredients = sorted({normalize_salt(value) for value in data.pop("salt_ingredients")})
-    vendor = Vendor(**data)
+    vendor_id = generate_vendor_id(data["name"], data["phone"])
+    while db.session.scalar(select(Vendor.id).where(Vendor.vendor_id == vendor_id)) is not None:
+        vendor_id = generate_vendor_id(data["name"], data["phone"])
+    vendor = Vendor(vendor_id=vendor_id, **data)
+
     for name in ingredients:
         salt = db.session.scalar(select(Salt).where(Salt.name == name))
         if salt is None:
             salt = Salt(name=name)
             db.session.add(salt)
         vendor.salts.append(salt)
+
     db.session.add(vendor)
     db.session.commit()
     return jsonify(vendor_details(vendor)), 201
+
+
+@api.post("/users")
+@require_roles("admin")
+def add_user():
+    data = read_data(UserSchema())
+
+    if db.session.scalar(select(User).where(User.username == data["username"])):
+        abort(409, description="Username already exists.")
+    if db.session.scalar(select(User).where(User.email == data["email"])):
+        abort(409, description="Email already exists.")
+    if db.session.scalar(select(Vendor).where(Vendor.vendor_id == data["vendor_id"])) is None:
+        abort(404, description="Vendor not found.")
+
+    password = data.pop("password")
+    user = User(password_hash=generate_password_hash(password), **data)
+    db.session.add(user)
+    db.session.commit()
+    return jsonify(UserSchema().dump(user)), 201
 
 
 @api.get("/alerts")

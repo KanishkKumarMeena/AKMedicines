@@ -19,7 +19,9 @@ def current_stock(medicine_id):
 def medicine_details(medicine, stock):
     data = MedicineSchema().dump(medicine)
     data["current_stock"] = stock
-    data["status"] = "depleted" if stock == 0 else "low_stock" if stock < medicine.min_threshold else "ample"
+    data["status"] = "depleted" if stock == 0 else (
+        "low_stock" if stock < medicine.min_threshold else "ample"
+    )
     return data
 
 
@@ -34,7 +36,7 @@ def inventory():
 
 def vendor_details(vendor):
     """formats ventor details from object to a json/python dict"""
-    return {"id": vendor.id, "name": vendor.name, "email": vendor.email,
+    return {"id": vendor.id, "vendor_id": vendor.vendor_id, "name": vendor.name, "email": vendor.email,
             "phone": vendor.phone, "salt_ingredients": [salt.name for salt in vendor.salts]}
 
 

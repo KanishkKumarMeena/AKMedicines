@@ -1,7 +1,7 @@
 from sqlalchemy import select
 
 from config import db
-from models import Medicine, Salt, Transaction, Vendor
+from models import Medicine, Salt, Transaction, Vendor, generate_vendor_id
 
 
 def add_dummy_data():
@@ -11,7 +11,9 @@ def add_dummy_data():
     paracetamol = Salt(name="paracetamol")
     antibiotic = Salt(name="amoxicillin + clavulanic acid")
     
-    db.session.add(Vendor(name="Demo Generic Supplier", email="supplier@example.com", salts=[paracetamol, antibiotic]))
+    name = "Demo Generic Supplier"
+    phone = "1234567890"
+    db.session.add(Vendor(vendor_id=generate_vendor_id(name, phone), name=name, email="supplier@example.com", phone=phone, salts=[paracetamol, antibiotic]))
     for name, category, salt, quantity in [
         ("Paracetamol 500 mg", "Analgesic", paracetamol.name, 100),
         ("Amoxicillin + Clavulanic Acid", "Antibiotic", antibiotic.name, 10),

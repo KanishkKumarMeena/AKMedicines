@@ -25,3 +25,6 @@ class Config:
     MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER")
     ADMIN_EMAIL = os.getenv("ADMIN_EMAIL")
     ALERT_INTERVAL_HOURS = int(os.getenv("ALERT_INTERVAL_HOURS", "6"))
+    JWT_SECRET = os.getenv("JWT_SECRET")
+    JWT_ISSUER = os.getenv("JWT_ISSUER", "ak-medicines-node")
+    JWT_AUDIENCE = os.getenv("JWT_AUDIENCE", "ak-medicines-api")
