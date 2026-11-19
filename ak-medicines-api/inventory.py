@@ -35,8 +35,8 @@ def inventory():
 
 
 def vendor_details(vendor):
-    """formats ventor details from object to a json/python dict"""
-    return {"id": vendor.id, "vendor_id": vendor.vendor_id, "name": vendor.name, "email": vendor.email,
+    """formats vendor details from object to a json/python dict"""
+    return {"id": vendor.id, "name": vendor.name, "email": vendor.email,
             "phone": vendor.phone, "salt_ingredients": [salt.name for salt in vendor.salts]}
 
 

@@ -15,13 +15,14 @@ uv run python app.py
 
 | Endpoint | Purpose |
 | --- | --- |
+| POST /api/login | Authenticate NGO user and return a JWT |
 | GET /api/medicines | Medicine catalog with calculated stock and status |
 | POST /api/medicines | Register a medicine and optional initial stock |
 | GET /api/transactions | Ledger; optionally filter with `?medicine_id=1` |
 | POST /api/transactions | Record RECEIVE or DISPENSE |
-| GET /api/vendors | Registered vendors and their formulations |
-| POST /api/vendors | Register a vendor and supplied formulations |
-| POST /api/users | Admin-only: register a user for a vendor |
+| GET /api/vendors | Registered external suppliers and their formulations |
+| POST /api/vendors | Register an external supplier and supplied formulations |
+| POST /api/users | Admin-only: register an NGO user account |
 | GET /api/alerts | Low/depleted medicines with matching vendors |
 
 Create a medicine:
@@ -63,11 +64,7 @@ Register a vendor:
 }
 ```
 
-Vendor creation returns a generated vendor ID such as `GENE7890-7Q4M`. It uses
-the first four organization-name letters, the last four phone digits, and a
-random four-character suffix. Phone is required for vendor registration.
-
-Only JWTs with a `role` claim of `admin` can create users:
+Only JWTs with a `role` claim of `admin` can create NGO users:
 
 ```json
 {
@@ -75,7 +72,7 @@ Only JWTs with a `role` claim of `admin` can create users:
   "username": "asha.patel",
   "email": "asha@example.com",
   "password": "a-long-password",
-  "vendor_id": "GENE7890-7Q4M"
+  "role": "staff"
 }
 ```
 
@@ -94,12 +91,12 @@ MAIL_DEFAULT_SENDER=inventory@example.com
 ADMIN_EMAIL=admin@example.com
 ALERT_INTERVAL_HOURS=6
 JWT_SECRET=replace-with-a-long-random-secret
-JWT_ISSUER=ak-medicines-node
-JWT_AUDIENCE=ak-medicines-api
+JWT_ISSUER=ak-medicines-api
+JWT_AUDIENCE=ak-medicines-ui
 ```
 
-All `/api` routes require a JWT issued by the Node proxy. The proxy must send
-it as `Authorization: Bearer <token>`. Tokens use HS256 and must contain `sub`
+All `/api` routes (except `POST /api/login`) require a JWT sent as
+`Authorization: Bearer <token>`. Tokens use HS256 and contain `sub`, `role`,
 and `exp` claims, with the configured issuer and audience.
 
 Emails include stock, thresholds, formulations and matching vendor contacts. No email is sent when stock is healthy. Missing email configuration or delivery failures are logged, and the next scheduled run still happens. Persistent shortages appear in each six-hour email. The first scheduled check happens after the interval; to send immediately:

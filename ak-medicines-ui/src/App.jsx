@@ -5,9 +5,11 @@ import Dashboard from './pages/Dashboard';
 import Inventory from './pages/Inventory';
 import Transactions from './pages/Transactions';
 import Alerts from './pages/Alerts';
+import Staff from './pages/Staff';
+import Login from './pages/Login';
 import logo from './assets/AK.svg';
 
-function Navbar() {
+function Navbar({ user, onLogout }) {
   const location = useLocation();
   const { alertMedicines } = useInventory();
   const [isOpen, setIsOpen] = useState(false);
@@ -18,6 +20,7 @@ function Navbar() {
     { path: '/inventory', label: 'Inventory' },
     { path: '/transactions', label: 'Log Transaction' },
     { path: '/alerts', label: `Alerts ${alertCount > 0 ? `(${alertCount})` : ''}` },
+    ...(user?.role === 'admin' ? [{ path: '/staff', label: 'Staff' }] : []),
   ];
 
   return (
@@ -33,7 +36,7 @@ function Navbar() {
         </Link>
 
         {/* Desktop Navigation */}
-        <div className="hidden md:flex space-x-2">
+        <div className="hidden md:flex items-center space-x-2">
           {links.map((link) => {
             const isActive = location.pathname === link.path;
             return (
@@ -50,6 +53,13 @@ function Navbar() {
               </Link>
             );
           })}
+          <button
+            type="button"
+            onClick={onLogout}
+            className="ml-2 px-3 py-1.5 rounded text-xs font-medium border border-[#05383b] text-gray-200 hover:bg-[#05383b] hover:text-white transition cursor-pointer"
+          >
+            Logout ({user?.username || 'NGO'})
+          </button>
         </div>
 
         {/* Mobile Hamburger Button */}
@@ -106,6 +116,16 @@ function Navbar() {
               </Link>
             );
           })}
+          <button
+            type="button"
+            onClick={() => {
+              setIsOpen(false);
+              onLogout();
+            }}
+            className="w-full text-left px-3 py-2 rounded text-sm font-medium text-red-300 hover:bg-[#05383b] hover:text-red-200 transition cursor-pointer"
+          >
+            Logout ({user?.username || 'NGO'})
+          </button>
         </div>
       )}
     </nav>
@@ -113,11 +133,35 @@ function Navbar() {
 }
 
 export default function App() {
+  const [token, setToken] = useState(() => localStorage.getItem('ak_token') || '');
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem('ak_user');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  const handleLogin = (newToken, newUser) => {
+    localStorage.setItem('ak_token', newToken);
+    localStorage.setItem('ak_user', JSON.stringify(newUser));
+    setToken(newToken);
+    setUser(newUser);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('ak_token');
+    localStorage.removeItem('ak_user');
+    setToken('');
+    setUser(null);
+  };
+
+  if (!token) {
+    return <Login onLogin={handleLogin} />;
+  }
+
   return (
-    <InventoryProvider>
+    <InventoryProvider token={token} onLogout={handleLogout}>
       <Router>
         <div className="h-screen bg-gray-100 text-gray-800 flex flex-col font-sans overflow-hidden">
-          <Navbar />
+          <Navbar user={user} onLogout={handleLogout} />
           <main className="flex-1 overflow-y-auto">
             <div className="max-w-6xl w-full mx-auto p-4 sm:p-6">
               <Routes>
@@ -125,6 +169,7 @@ export default function App() {
                 <Route path="/inventory" element={<Inventory />} />
                 <Route path="/transactions" element={<Transactions />} />
                 <Route path="/alerts" element={<Alerts />} />
+                {user?.role === 'admin' && <Route path="/staff" element={<Staff />} />}
               </Routes>
             </div>
           </main>

@@ -1,12 +1,12 @@
 from flask import Blueprint, abort, jsonify, request
 from sqlalchemy import select
-from werkzeug.security import generate_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from config import db
-from api.auth import authenticate, require_roles
+from api.auth import authenticate, create_token, require_roles
 from inventory import current_stock, inventory, low_stock_alerts, medicine_details, vendor_details
-from models import Medicine, Salt, Transaction, User, Vendor, generate_vendor_id, normalize_salt
-from api.schema import MedicineSchema, TransactionSchema, UserSchema, VendorSchema
+from models import Medicine, Salt, Transaction, User, Vendor, normalize_salt
+from api.schema import LoginSchema, MedicineSchema, TransactionSchema, UserSchema, VendorSchema
 
 
 api = Blueprint("api", __name__, url_prefix="/api")
@@ -14,6 +14,8 @@ api = Blueprint("api", __name__, url_prefix="/api")
 
 @api.before_request
 def authenticate_request():
+    if request.endpoint == "api.login":
+        return
     authenticate()
 
 
@@ -22,6 +24,16 @@ def read_data(schema):
     if not isinstance(data, dict):
         abort(400, description="Provide a JSON object.")
     return schema.load(data)
+
+
+@api.post("/login")
+def login():
+    """Authenticate an NGO user and return a JWT"""
+    data = read_data(LoginSchema())
+    user = db.session.scalar(select(User).where(User.username == data["username"]))
+    if user is None or not check_password_hash(user.password_hash, data["password"]):
+        abort(401, description="Invalid username or password.")
+    return jsonify(token=create_token(user), user=UserSchema().dump(user)), 200
 
 
 @api.get("/medicines")
@@ -94,13 +106,10 @@ def get_vendors():
 
 @api.post("/vendors")
 def add_vendor():
-    """API to register the NGO as the vendor"""
+    """API to register an external medicine supplier"""
     data = read_data(VendorSchema())
     ingredients = sorted({normalize_salt(value) for value in data.pop("salt_ingredients")})
-    vendor_id = generate_vendor_id(data["name"], data["phone"])
-    while db.session.scalar(select(Vendor.id).where(Vendor.vendor_id == vendor_id)) is not None:
-        vendor_id = generate_vendor_id(data["name"], data["phone"])
-    vendor = Vendor(vendor_id=vendor_id, **data)
+    vendor = Vendor(**data)
 
     for name in ingredients:
         salt = db.session.scalar(select(Salt).where(Salt.name == name))
@@ -114,17 +123,22 @@ def add_vendor():
     return jsonify(vendor_details(vendor)), 201
 
 
+@api.get("/users")
+@require_roles("admin")
+def get_users():
+    return jsonify(UserSchema(many=True).dump(db.session.scalars(select(User).order_by(User.id)).all()))
+
+
 @api.post("/users")
 @require_roles("admin")
 def add_user():
+    """Admin-only API to create an NGO user account"""
     data = read_data(UserSchema())
 
     if db.session.scalar(select(User).where(User.username == data["username"])):
         abort(409, description="Username already exists.")
     if db.session.scalar(select(User).where(User.email == data["email"])):
         abort(409, description="Email already exists.")
-    if db.session.scalar(select(Vendor).where(Vendor.vendor_id == data["vendor_id"])) is None:
-        abort(404, description="Vendor not found.")
 
     password = data.pop("password")
     user = User(password_hash=generate_password_hash(password), **data)

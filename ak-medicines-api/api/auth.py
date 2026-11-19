@@ -1,6 +1,22 @@
-import jwt
+from datetime import datetime, timedelta, timezone
 from functools import wraps
+import jwt
 from flask import abort, current_app, g, request
+
+
+def create_token(user):
+    secret = current_app.config["JWT_SECRET"]
+    if not secret:
+        abort(500, description="JWT authentication is not configured.")
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=current_app.config.get("JWT_EXP_HOURS", 24))
+    payload = {
+        "sub": user.username,
+        "role": user.role,
+        "exp": int(expires_at.timestamp()),
+        "iss": current_app.config["JWT_ISSUER"],
+        "aud": current_app.config["JWT_AUDIENCE"],
+    }
+    return jwt.encode(payload, secret, algorithm="HS256")
 
 
 def authenticate():

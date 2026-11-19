@@ -67,7 +67,6 @@ class InventoryTests(unittest.TestCase):
         self.add_medicine(salt_ingredients=" Clavulanic Acid + Amoxicillin ", initial_stock=0)
         response = self.client.post("/api/vendors", json=dict(name="Supplier", email="supplier@example.com", phone="1234567890", salt_ingredients=["amoxicillin+clavulanic acid"]))
         self.assertEqual(response.status_code, 201)
-        self.assertRegex(response.get_json()["vendor_id"], r"^SUPP7890-[A-Z0-9]{4}$")
 
         self.client.post("/api/vendors", json=dict(name="Other", email="other@example.com", phone="9876543210", salt_ingredients=["amoxicillin"]))
         alerts = self.client.get("/api/alerts").get_json()
@@ -79,19 +78,26 @@ class InventoryTests(unittest.TestCase):
         self.assertEqual(len(messages), 1)
         self.assertIn("Supplier", messages[0].html)
 
-    def test_admin_creates_vendor_user(self):
-        vendor = self.client.post("/api/vendors", json=dict(name="Supplier", email="supplier@example.com", phone="1234567890", salt_ingredients=["Paracetamol"])).get_json()
-        data = dict(name="Asha Patel", username="asha.patel", email="asha@example.com", password="long-enough-password", vendor_id=vendor["vendor_id"])
+    def test_admin_creates_user_and_login(self):
+        data = dict(name="Asha Patel", username="asha.patel", email="asha@example.com", password="long-enough-password")
 
         response = self.client.post("/api/users", json=data)
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.get_json()["username"], "asha.patel")
+        self.assertEqual(response.get_json()["role"], "staff")
         self.assertNotIn("password", response.get_json())
         self.assertEqual(self.client.post("/api/users", json=data).status_code, 409)
 
+        login_resp = self.client.post("/api/login", json=dict(username="asha.patel", password="long-enough-password"), headers={"Authorization": ""})
+        self.assertEqual(login_resp.status_code, 200)
+        self.assertIn("token", login_resp.get_json())
+
+        bad_login = self.client.post("/api/login", json=dict(username="asha.patel", password="wrong"), headers={"Authorization": ""})
+        self.assertEqual(bad_login.status_code, 401)
+
         data["username"] = "another.user"
         data["email"] = "another@example.com"
-        self.assertEqual(self.client.post("/api/users", json=data, headers={"Authorization": self.authorization("vendor")}).status_code, 403)
+        self.assertEqual(self.client.post("/api/users", json=data, headers={"Authorization": self.authorization("staff")}).status_code, 403)
 
     def test_threshold_and_dummy_data(self):
         self.assertTrue(add_dummy_data())

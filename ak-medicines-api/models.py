@@ -1,6 +1,4 @@
 from datetime import datetime, timezone
-import secrets
-import string
 
 from config import db
 
@@ -16,14 +14,6 @@ def normalize_salt(value):
     return " + ".join(sorted(" ".join(part.lower().split()) for part in value.split("+") if part.strip()))
 
 
-def generate_vendor_id(name, phone):
-    letters = "".join(character for character in name.upper() if character.isalpha())
-    prefix = (letters[:4] + "XXXX")[:4]
-    digits = "".join(character for character in phone if character.isdigit())
-    suffix = "".join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(4))
-    return f"{prefix}{digits[-4:]}-{suffix}"
-
-
 class Medicine(db.Model):
     __tablename__ = "medicines"
 
@@ -31,6 +21,7 @@ class Medicine(db.Model):
     name = db.Column(db.String(150), nullable=False)
     category = db.Column(db.String(100), nullable=False)
     salt_ingredients = db.Column(db.String(250), nullable=False, index=True)
+    unit = db.Column(db.String(30), nullable=False, default="Tablets")
     min_threshold = db.Column(db.Integer, nullable=False, default=25)
     transactions = db.relationship("Transaction", back_populates="medicine")
     __table_args__ = (db.CheckConstraint("min_threshold >= 0"),)
@@ -63,10 +54,9 @@ class Vendor(db.Model):
     __tablename__ = "vendors"
 
     id = db.Column(db.Integer, primary_key=True)
-    vendor_id = db.Column(db.String(13), nullable=False, unique=True, index=True)
     name = db.Column(db.String(150), nullable=False)
     email = db.Column(db.String(254), nullable=False)
-    phone = db.Column(db.String(30), nullable=False)
+    phone = db.Column(db.String(30))
     salts = db.relationship("Salt", secondary=medicine_vendors, lazy="selectin")
 
 
@@ -78,7 +68,5 @@ class User(db.Model):
     username = db.Column(db.String(50), nullable=False, unique=True, index=True)
     email = db.Column(db.String(254), nullable=False, unique=True, index=True)
     password_hash = db.Column(db.String(256), nullable=False)
-    role = db.Column(db.String(20), nullable=False, default="vendor")
-    vendor_id = db.Column(db.String(13), db.ForeignKey("vendors.vendor_id"), nullable=False, index=True)
-    vendor = db.relationship("Vendor")
-    __table_args__ = (db.CheckConstraint("role IN ('admin', 'vendor')"),)
+    role = db.Column(db.String(20), nullable=False, default="staff")
+    __table_args__ = (db.CheckConstraint("role IN ('admin', 'staff')"),)

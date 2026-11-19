@@ -14,7 +14,7 @@ mail = Mail()
 
 
 class Config:
-    SQLALCHEMY_DATABASE_URI = os.environ["DATABASE_URL"]
+    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", "sqlite:///ak_medicines.db")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     MAIL_SERVER = os.getenv("MAIL_SERVER", "localhost")
     MAIL_PORT = int(os.getenv("MAIL_PORT", "587"))
@@ -25,6 +25,7 @@ class Config:
     MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER")
     ADMIN_EMAIL = os.getenv("ADMIN_EMAIL")
     ALERT_INTERVAL_HOURS = int(os.getenv("ALERT_INTERVAL_HOURS", "6"))
-    JWT_SECRET = os.getenv("JWT_SECRET")
-    JWT_ISSUER = os.getenv("JWT_ISSUER", "ak-medicines-node")
-    JWT_AUDIENCE = os.getenv("JWT_AUDIENCE", "ak-medicines-api")
+    JWT_SECRET = os.getenv("JWT_SECRET", "ak-medicines-dev-secret-key")
+    JWT_ISSUER = os.getenv("JWT_ISSUER", "ak-medicines-api")
+    JWT_AUDIENCE = os.getenv("JWT_AUDIENCE", "ak-medicines-ui")
+    JWT_EXP_HOURS = int(os.getenv("JWT_EXP_HOURS", "24"))
