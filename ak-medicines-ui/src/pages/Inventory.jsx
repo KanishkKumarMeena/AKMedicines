@@ -14,9 +14,9 @@ export default function Inventory() {
     category: 'Antibiotic',
     minThreshold: '',
     unit: 'Tablets',
-    expiryDate: '',
     initialQuantity: '',
   });
+  const [formError, setFormError] = useState('');
 
   const filteredMedicines = medicines.filter((med) => {
     const matchesSearch =
@@ -28,24 +28,28 @@ export default function Inventory() {
     return matchesSearch && med.status === filterStatus;
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.salts) {
-      alert('Please fill in Brand Name and Active Salts.');
+    setFormError('');
+    if (!formData.name.trim() || !formData.salts.trim()) {
+      setFormError('Please fill in Brand Name and Active Salts.');
       return;
     }
 
-    addMedicine(formData);
-    setFormData({
-      name: '',
-      salts: '',
-      category: 'Antibiotic',
-      minThreshold: '',
-      unit: 'Tablets',
-      expiryDate: '',
-      initialQuantity: '',
-    });
-    setShowAddForm(false);
+    try {
+      await addMedicine(formData);
+      setFormData({
+        name: '',
+        salts: '',
+        category: 'Antibiotic',
+        minThreshold: '',
+        unit: 'Tablets',
+        initialQuantity: '',
+      });
+      setShowAddForm(false);
+    } catch (err) {
+      setFormError(err.message || 'Could not save medicine.');
+    }
   };
 
   return (
@@ -68,6 +72,11 @@ export default function Inventory() {
           <h2 className="text-base font-bold text-gray-800 mb-3 border-b pb-2">
             Add New Medicine to System
           </h2>
+          {formError && (
+            <div className="bg-red-50 border border-red-300 text-red-700 text-xs p-2.5 rounded mb-3 font-medium">
+              {formError}
+            </div>
+          )}
           <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
               <div>

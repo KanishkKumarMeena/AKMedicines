@@ -22,6 +22,7 @@ export default function Alerts() {
         <div className="space-y-3">
           {alertMedicines.map((med) => {
             const isDepleted = med.currentStock <= 0;
+            const suppliers = med.vendors || [];
 
             return (
               <div
@@ -45,11 +46,25 @@ export default function Alerts() {
                       Active Salt: <strong className="text-gray-800">{med.salts}</strong> | Current Stock:{' '}
                       <strong className="text-gray-900">{med.currentStock} {med.unit}</strong> (Min required: {med.minThreshold} {med.unit})
                     </div>
+                    <div className="text-xs text-gray-600 mt-1.5 pt-1.5 border-t border-gray-100">
+                      <span className="font-semibold text-gray-700">Available Suppliers: </span>
+                      {suppliers.length === 0 ? (
+                        <span className="text-gray-500">No matching supplier registered for this salt.</span>
+                      ) : (
+                        suppliers.map((v, idx) => (
+                          <span key={v.id} className="text-gray-800">
+                            <strong>{v.name}</strong> ({v.email}
+                            {v.phone ? `, ${v.phone}` : ''})
+                            {idx < suppliers.length - 1 ? ' • ' : ''}
+                          </span>
+                        ))
+                      )}
+                    </div>
                   </div>
 
                   <Link
-                    to="/transactions"
-                    className="bg-[#00171f] hover:bg-[#05383b] text-white text-xs px-3 py-1.5 rounded font-semibold self-start sm:self-auto"
+                    to={`/transactions?medicineId=${med.id}`}
+                    className="bg-[#00171f] hover:bg-[#05383b] text-white text-xs px-3 py-1.5 rounded font-semibold self-start sm:self-auto shrink-0"
                   >
                     Log Intake &rarr;
                   </Link>

@@ -1,46 +1,85 @@
 import React, { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useInventory } from '../context/InventoryContext';
 
+function normalizeSalt(value = '') {
+  return value
+    .split('+')
+    .map((part) => part.trim().toLowerCase().replace(/\s+/g, ' '))
+    .filter(Boolean)
+    .sort()
+    .join(' + ');
+}
+
 export default function Transactions() {
-  const { medicines, transactions, addTransaction } = useInventory();
+  const { medicines, transactions, vendors, addTransaction } = useInventory();
+  const [searchParams] = useSearchParams();
+  const initialMedId = searchParams.get('medicineId') || '';
 
   // Form State
   const [type, setType] = useState('RECEIVE'); // 'RECEIVE' or 'DISPENSE'
-  const [medicineId, setMedicineId] = useState(medicines[0]?.id || '');
+  const [medicineId, setMedicineId] = useState(initialMedId);
   const [quantity, setQuantity] = useState('');
   const [sourceOrDest, setSourceOrDest] = useState('');
   const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
 
-  const selectedMed = medicines.find((m) => m.id === medicineId);
+  const activeMedicineId = medicineId || medicines[0]?.id || '';
+  const selectedMed = medicines.find((m) => Number(m.id) === Number(activeMedicineId));
   const currentAvailable = selectedMed?.currentStock || 0;
 
-  const handleSubmit = (e) => {
+  // Filter suppliers from DB that supply the selected medicine's active salt
+  const targetSalt = normalizeSalt(selectedMed?.salts);
+  const matchingVendors = vendors.filter((v) =>
+    (v.salt_ingredients || []).some((s) => normalizeSalt(s) === targetSalt)
+  );
+
+  const activeSupplier =
+    type === 'RECEIVE'
+      ? matchingVendors.some((v) => v.name === sourceOrDest)
+        ? sourceOrDest
+        : matchingVendors[0]?.name || 'Direct Aid Intake'
+      : sourceOrDest;
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!medicineId || !quantity || Number(quantity) <= 0) {
-      alert('Please select a medicine and enter a valid quantity.');
+    setError('');
+    setMessage('');
+
+    if (!activeMedicineId || !quantity || Number(quantity) <= 0) {
+      setError('Please select a medicine and enter a valid quantity.');
       return;
     }
 
     if (type === 'DISPENSE' && Number(quantity) > currentAvailable) {
-      const confirmOverdraft = window.confirm(
-        `Warning: Dispensing ${quantity} is more than currently available (${currentAvailable}). Do you still want to proceed?`
+      setError(
+        `Dispense quantity (${quantity}) exceeds currently available stock (${currentAvailable} ${selectedMed?.unit || 'Units'}).`
       );
-      if (!confirmOverdraft) return;
+      return;
     }
 
-    addTransaction({
-      medicineId,
-      type,
-      quantity: Number(quantity),
-      sourceOrDest:
-        sourceOrDest ||
-        (type === 'RECEIVE' ? 'Direct Aid Intake' : 'General Outpatient Clinic'),
-    });
+    const partyName =
+      type === 'RECEIVE'
+        ? activeSupplier
+        : sourceOrDest.trim() || 'General Outpatient Clinic';
 
-    setQuantity('');
-    setSourceOrDest('');
-    setMessage('Transaction logged successfully!');
-    setTimeout(() => setMessage(''), 3000);
+    try {
+      await addTransaction({
+        medicineId: Number(activeMedicineId),
+        type,
+        quantity: Number(quantity),
+        sourceOrDest: partyName,
+      });
+
+      setQuantity('');
+      if (type === 'DISPENSE') {
+        setSourceOrDest('');
+      }
+      setMessage('Transaction logged successfully!');
+      setTimeout(() => setMessage(''), 3000);
+    } catch (err) {
+      setError(err.message || 'Could not record transaction.');
+    }
   };
 
   return (
@@ -56,6 +95,12 @@ export default function Transactions() {
             <h2 className="text-base font-bold text-gray-800 mb-3 border-b pb-2">
               New Transaction Entry
             </h2>
+
+            {error && (
+              <div className="bg-red-50 border border-red-300 text-red-700 text-xs p-2.5 rounded mb-3 font-medium">
+                {error}
+              </div>
+            )}
 
             {message && (
               <div className="bg-green-100 border border-green-300 text-green-800 text-xs p-2.5 rounded mb-3 font-medium">
@@ -73,7 +118,10 @@ export default function Transactions() {
                       name="txType"
                       value="RECEIVE"
                       checked={type === 'RECEIVE'}
-                      onChange={() => setType('RECEIVE')}
+                      onChange={() => {
+                        setType('RECEIVE');
+                        setError('');
+                      }}
                     />
                     <span className="font-medium text-green-700">Receive (Stock In)</span>
                   </label>
@@ -83,7 +131,10 @@ export default function Transactions() {
                       name="txType"
                       value="DISPENSE"
                       checked={type === 'DISPENSE'}
-                      onChange={() => setType('DISPENSE')}
+                      onChange={() => {
+                        setType('DISPENSE');
+                        setError('');
+                      }}
                     />
                     <span className="font-medium text-orange-700">Dispense (Stock Out)</span>
                   </label>
@@ -96,8 +147,11 @@ export default function Transactions() {
                   Medicine *
                 </label>
                 <select
-                  value={medicineId}
-                  onChange={(e) => setMedicineId(e.target.value)}
+                  value={activeMedicineId}
+                  onChange={(e) => {
+                    setMedicineId(e.target.value);
+                    setError('');
+                  }}
                   className="w-full border border-gray-300 rounded p-2 text-sm bg-white focus:outline-none focus:border-[#00171f]"
                 >
                   {medicines.map((m) => (
@@ -132,15 +186,42 @@ export default function Transactions() {
               {/* Source or Destination */}
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">
-                  {type === 'RECEIVE' ? 'Supplier Name' : 'Clinic / Patient Destination'}
+                  {type === 'RECEIVE' ? 'Supplier (Filtered by Medicine Salt) *' : 'Clinic / Patient Destination'}
                 </label>
-                <input
-                  type="text"
-                  placeholder={type === 'RECEIVE' ? 'e.g. Red Cross Donation' : 'e.g. Mobile Unit Camp #3'}
-                  value={sourceOrDest}
-                  onChange={(e) => setSourceOrDest(e.target.value)}
-                  className="w-full border border-gray-300 rounded p-2 text-sm focus:outline-none focus:border-[#00171f]"
-                />
+                {type === 'RECEIVE' ? (
+                  <>
+                    <select
+                      value={activeSupplier}
+                      onChange={(e) => setSourceOrDest(e.target.value)}
+                      className="w-full border border-gray-300 rounded p-2 text-sm bg-white focus:outline-none focus:border-[#00171f]"
+                    >
+                      {matchingVendors.length > 0 ? (
+                        matchingVendors.map((v) => (
+                          <option key={v.id} value={v.name}>
+                            {v.name} ({v.email})
+                          </option>
+                        ))
+                      ) : (
+                        <option value="Direct Aid Intake">
+                          No registered vendor for this salt (Direct Aid Intake)
+                        </option>
+                      )}
+                    </select>
+                    {selectedMed && (
+                      <span className="block text-[11px] text-gray-500 mt-1">
+                        Showing suppliers for salt: <strong>{selectedMed.salts}</strong>
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <input
+                    type="text"
+                    placeholder="e.g. Mobile Unit Camp #3"
+                    value={sourceOrDest}
+                    onChange={(e) => setSourceOrDest(e.target.value)}
+                    className="w-full border border-gray-300 rounded p-2 text-sm focus:outline-none focus:border-[#00171f]"
+                  />
+                )}
               </div>
 
 
