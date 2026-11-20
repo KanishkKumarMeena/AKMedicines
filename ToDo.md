@@ -53,3 +53,25 @@
 * **5. Local Environment Setup & Documentation Sync:**
 * [completed] Create `ak-medicines-api/.env` (`DATABASE_URL`, `JWT_SECRET`, SMTP config), run `init-db` & `dummy-db`, and verify the backend test suite.
 * [completed] Update `libraries.md`, `explanation.md`, and `README.md` with the final integrated architecture and dependencies.
+
+
+
+### Part 4: Additional Features (CSV Audit/Upload & ML Stock-Out Forecasting)
+
+* **1. CSV Donor Audit Export & Bulk CSV Upload (Kanishk — Frontend):**
+* **One-Click CSV Audit Export:**
+  * In `Transactions.jsx`: Add an **"Export Ledger CSV"** button that downloads the immutable transaction history (`ak_medicines_audit_ledger.csv`) for NGO donor compliance.
+  * In `Inventory.jsx`: Add an **"Export Stock CSV"** button that downloads the current medicine catalog and live calculated stock (`ak_medicines_inventory.csv`).
+* **Bulk CSV Upload:**
+  * In `Inventory.jsx`: Add a **"Bulk Upload CSV"** option (plus a sample CSV template download) that parses rows (`name,category,salt_ingredients,unit,min_threshold,initial_stock,party`) and registers medicines along with their initial `RECEIVE` ledger entries via `POST /api/medicines`.
+
+* **2. ML Stock-Out Prediction & 30-Day Reorder Forecasting (Aryan — Backend, then UI):**
+* **Forecasting Model (`ak-medicines-api/inventory.py` or `forecast.py`):**
+  * Use historical `DISPENSE` transactions from the ledger to fit a Linear Regression / Weighted Daily Burn-Rate consumption model per medicine.
+  * Compute and return three fields inside `medicine_details()` (included in `GET /api/medicines` and `GET /api/alerts`):
+    * `daily_burn_rate`: Predicted units dispensed per day (`0` if no dispensation history).
+    * `predicted_days_left`: `floor(current_stock / daily_burn_rate)` (`null` if burn rate is `0`, `0` if depleted).
+    * `recommended_restock`: `max(0, ceil(30 * daily_burn_rate + min_threshold - current_stock))` to cover 30 days of predicted demand.
+* **Frontend Forecast Display (`Alerts.jsx` & `Inventory.jsx`):**
+  * Display **"Est. Run-Out (~N days)"** and **"Suggested 30-Day Order"** badges on the Alerts and Inventory pages once the backend fields are available.
+
