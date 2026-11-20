@@ -59,10 +59,10 @@
 ### Part 4: Additional Features (CSV Audit/Upload & ML Stock-Out Forecasting)
 
 * **1. CSV Donor Audit Export & Bulk CSV Upload (Kanishk — Frontend):**
-* **One-Click CSV Audit Export:**
+* [completed] **One-Click CSV Audit Export:**
   * In `Transactions.jsx`: Add an **"Export Ledger CSV"** button that downloads the immutable transaction history (`ak_medicines_audit_ledger.csv`) for NGO donor compliance.
   * In `Inventory.jsx`: Add an **"Export Stock CSV"** button that downloads the current medicine catalog and live calculated stock (`ak_medicines_inventory.csv`).
-* **Bulk CSV Upload:**
+* [completed] **Bulk CSV Upload:**
   * In `Inventory.jsx`: Add a **"Bulk Upload CSV"** option (plus a sample CSV template download) that parses rows (`name,category,salt_ingredients,unit,min_threshold,initial_stock,party`) and registers medicines along with their initial `RECEIVE` ledger entries via `POST /api/medicines`.
 
 * **2. ML Stock-Out Prediction & 30-Day Reorder Forecasting (Aryan — Backend, then UI):**

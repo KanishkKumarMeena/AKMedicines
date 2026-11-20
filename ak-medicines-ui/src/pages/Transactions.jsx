@@ -82,6 +82,43 @@ export default function Transactions() {
     }
   };
 
+  const handleExportCSV = () => {
+    const escapeCell = (val) => `"${String(val ?? '').replace(/"/g, '""')}"`;
+    const headers = [
+      'Transaction ID',
+      'Timestamp',
+      'Type',
+      'Medicine',
+      'Active Salt',
+      'Quantity',
+      'Unit',
+      'Supplier / Destination',
+    ];
+
+    const rows = transactions.map((tx) => {
+      const med = medicines.find((m) => Number(m.id) === Number(tx.medicineId));
+      return [
+        tx.id,
+        tx.timestamp,
+        tx.type,
+        med?.name || 'Unknown',
+        med?.salts || '',
+        tx.type === 'RECEIVE' ? `+${tx.quantity}` : `-${tx.quantity}`,
+        med?.unit || 'Tablets',
+        tx.sourceOrDest,
+      ].map(escapeCell).join(',');
+    });
+
+    const csvContent = [headers.map(escapeCell).join(','), ...rows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'ak_medicines_audit_ledger.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div>
       <div className="mb-3">
@@ -242,6 +279,16 @@ export default function Transactions() {
         {/* History Table Column */}
         <div className="md:col-span-2">
           <div className="bg-white border border-gray-300 rounded p-4 shadow-2xs">
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-base font-bold text-gray-800">Audit Ledger History</h2>
+              <button
+                type="button"
+                onClick={handleExportCSV}
+                className="bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-800 text-xs px-3 py-1.5 rounded font-medium cursor-pointer"
+              >
+                Export Ledger CSV
+              </button>
+            </div>
             <div className="overflow-x-auto max-h-[550px] overflow-y-auto">
               <table className="w-full text-left text-sm border-collapse border border-gray-200 min-w-[550px]">
                 <thead className="bg-gray-100 text-gray-700 font-semibold border-b border-gray-200 sticky top-0 whitespace-nowrap">

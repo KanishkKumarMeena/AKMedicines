@@ -6,6 +6,11 @@ export default function Inventory() {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showCsvBox, setShowCsvBox] = useState(false);
+  const [csvFile, setCsvFile] = useState(null);
+  const [csvMessage, setCsvMessage] = useState('');
+  const [csvError, setCsvError] = useState('');
+  const [uploadingCsv, setUploadingCsv] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -52,19 +57,205 @@ export default function Inventory() {
     }
   };
 
+  const handleExportStockCSV = () => {
+    const escapeCell = (val) => `"${String(val ?? '').replace(/"/g, '""')}"`;
+    const headers = [
+      'ID',
+      'Brand Name',
+      'Active Salt',
+      'Category',
+      'Unit',
+      'Min Threshold',
+      'Current Stock',
+      'Status',
+    ];
+
+    const rows = medicines.map((m) =>
+      [
+        m.id,
+        m.name,
+        m.salts,
+        m.category,
+        m.unit,
+        m.minThreshold,
+        m.currentStock,
+        m.status === 'AMPLE' ? 'Ample' : m.status === 'LOW_STOCK' ? 'Low Stock' : 'Depleted',
+      ]
+        .map(escapeCell)
+        .join(',')
+    );
+
+    const csvContent = [headers.map(escapeCell).join(','), ...rows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'ak_medicines_inventory.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadSampleCSV = () => {
+    const sample = [
+      'name,category,salt_ingredients,unit,min_threshold,initial_stock,party',
+      'ORS Sachet,Electrolytes,oral rehydration salts,Sachets,50,200,Demo Generic Supplier',
+      'Azithromycin 500 mg,Antibiotic,azithromycin,Tablets,25,80,MedAid Pharma Distributors',
+    ].join('\n');
+    const blob = new Blob([sample], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'sample_medicines_upload.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleCsvUpload = async (e) => {
+    e.preventDefault();
+    setCsvError('');
+    setCsvMessage('');
+
+    if (!csvFile) {
+      setCsvError('Please choose a .csv file first.');
+      return;
+    }
+
+    setUploadingCsv(true);
+    try {
+      const text = await csvFile.text();
+      const lines = text
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+      if (lines.length < 2) {
+        setCsvError('CSV file must have a header row and at least one medicine row.');
+        setUploadingCsv(false);
+        return;
+      }
+
+      const dataLines = lines[0].toLowerCase().startsWith('name,') ? lines.slice(1) : lines;
+      let importedCount = 0;
+
+      for (const line of dataLines) {
+        const cols = line.split(',').map((c) => c.trim().replace(/^"|"$/g, ''));
+        const [name, category, salts, unit, minThreshold, initialQuantity, party] = cols;
+        if (!name || !salts) continue;
+
+        await addMedicine({
+          name,
+          category: category || 'Other',
+          salts,
+          unit: unit || 'Tablets',
+          minThreshold: minThreshold || '25',
+          initialQuantity: initialQuantity || '0',
+          party: party || 'Initial Stock Ingestion',
+        });
+        importedCount += 1;
+      }
+
+      if (importedCount === 0) {
+        setCsvError('No valid medicine rows found in the CSV file.');
+      } else {
+        setCsvMessage(`Successfully imported ${importedCount} medicine(s) from CSV!`);
+        setCsvFile(null);
+      }
+    } catch (err) {
+      setCsvError(err.message || 'Failed to import CSV file.');
+    } finally {
+      setUploadingCsv(false);
+    }
+  };
+
   return (
     <div>
       <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-2">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Medicine Inventory</h1>
         </div>
-        <button
-          onClick={() => setShowAddForm(!showAddForm)}
-          className="bg-[#00171f] hover:bg-[#05383b] text-white text-sm px-4 py-2 rounded font-medium shadow-xs self-start sm:self-auto cursor-pointer"
-        >
-          {showAddForm ? 'Close Form' : '+ Add New Medicine'}
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={handleExportStockCSV}
+            className="bg-white hover:bg-gray-100 border border-gray-300 text-gray-800 text-xs px-3 py-2 rounded font-medium shadow-2xs cursor-pointer"
+          >
+            Export Stock CSV
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setShowCsvBox(!showCsvBox);
+              setShowAddForm(false);
+            }}
+            className="bg-white hover:bg-gray-100 border border-gray-300 text-gray-800 text-xs px-3 py-2 rounded font-medium shadow-2xs cursor-pointer"
+          >
+            {showCsvBox ? 'Close CSV Upload' : 'Bulk Upload CSV'}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setShowAddForm(!showAddForm);
+              setShowCsvBox(false);
+            }}
+            className="bg-[#00171f] hover:bg-[#05383b] text-white text-sm px-4 py-2 rounded font-medium shadow-xs cursor-pointer"
+          >
+            {showAddForm ? 'Close Form' : '+ Add New Medicine'}
+          </button>
+        </div>
       </div>
+
+      {/* Bulk CSV Upload Inline Box */}
+      {showCsvBox && (
+        <div className="bg-white border-2 border-[#00171f] rounded p-5 mb-6 shadow-xs">
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center border-b pb-2 mb-3 gap-2">
+            <h2 className="text-base font-bold text-gray-800">
+              Bulk Upload Medicines via CSV
+            </h2>
+            <button
+              type="button"
+              onClick={handleDownloadSampleCSV}
+              className="text-xs text-[#05383b] hover:text-[#00171f] underline font-semibold self-start sm:self-auto cursor-pointer"
+            >
+              Download Sample CSV Template
+            </button>
+          </div>
+
+          <p className="text-xs text-gray-600 mb-3">
+            Expected columns:{' '}
+            <code className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-800">
+              name,category,salt_ingredients,unit,min_threshold,initial_stock,party
+            </code>
+          </p>
+
+          {csvError && (
+            <div className="bg-red-50 border border-red-300 text-red-700 text-xs p-2.5 rounded mb-3 font-medium">
+              {csvError}
+            </div>
+          )}
+
+          {csvMessage && (
+            <div className="bg-green-100 border border-green-300 text-green-800 text-xs p-2.5 rounded mb-3 font-medium">
+              {csvMessage}
+            </div>
+          )}
+
+          <form onSubmit={handleCsvUpload} className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+            <input
+              type="file"
+              accept=".csv"
+              onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
+              className="text-xs text-gray-700 border border-gray-300 rounded p-1.5 bg-gray-50 w-full sm:w-auto"
+            />
+            <button
+              type="submit"
+              disabled={uploadingCsv}
+              className="bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white text-xs px-4 py-2 rounded font-semibold shadow-xs cursor-pointer"
+            >
+              {uploadingCsv ? 'Importing...' : 'Upload & Import'}
+            </button>
+          </form>
+        </div>
+      )}
 
       {/* Add Medicine Inline Box */}
       {showAddForm && (

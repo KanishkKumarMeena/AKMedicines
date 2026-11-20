@@ -107,7 +107,7 @@ export function InventoryProvider({ token, onLogout, children }) {
         newMed.initialQuantity && Number(newMed.initialQuantity) > 0
           ? Number(newMed.initialQuantity)
           : 0,
-      party: 'Initial Stock Ingestion',
+      party: (newMed.party || '').trim() || 'Initial Stock Ingestion',
     };
 
     const created = await apiFetch('/api/medicines', {
