@@ -147,6 +147,20 @@ def add_user():
     return jsonify(UserSchema().dump(user)), 201
 
 
+@api.delete("/users/<int:user_id>")
+@require_roles("admin")
+def delete_user(user_id):
+    """Admin-only API to remove a staff account"""
+    user = db.session.get(User, user_id)
+    if user is None:
+        abort(404, description="User not found.")
+    if user.role == "admin":
+        abort(400, description="Cannot remove an admin account.")
+    db.session.delete(user)
+    db.session.commit()
+    return jsonify(deleted=user_id), 200
+
+
 @api.get("/alerts")
 def get_alerts():
     return jsonify(low_stock_alerts())

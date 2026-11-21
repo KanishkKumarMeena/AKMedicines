@@ -51,6 +51,19 @@ export default function Staff() {
     }
   };
 
+  const handleRemove = async (userId) => {
+    setError('');
+    setMessage('');
+    try {
+      await apiFetch(`/api/users/${userId}`, { method: 'DELETE' });
+      setMessage('Staff account removed.');
+      setTimeout(() => setMessage(''), 3000);
+      loadUsers();
+    } catch (err) {
+      setError(err.message || 'Could not remove user.');
+    }
+  };
+
   return (
     <div>
       <div className="mb-4">
@@ -148,13 +161,14 @@ export default function Staff() {
         {/* Registered Users Table */}
         <div className="md:col-span-2">
           <div className="bg-white border border-gray-300 rounded overflow-x-auto shadow-2xs">
-            <table className="w-full text-left text-sm border-collapse min-w-[450px]">
+            <table className="w-full text-left text-sm border-collapse min-w-[500px]">
               <thead className="bg-gray-100 text-gray-700 font-semibold border-b border-gray-300 whitespace-nowrap">
                 <tr>
                   <th className="p-3 border-r border-gray-200">Name</th>
                   <th className="p-3 border-r border-gray-200">Username</th>
                   <th className="p-3 border-r border-gray-200">Email</th>
-                  <th className="p-3 text-center">Role</th>
+                  <th className="p-3 border-r border-gray-200 text-center">Role</th>
+                  <th className="p-3 text-center">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -167,7 +181,7 @@ export default function Staff() {
                       {u.username}
                     </td>
                     <td className="p-3 border-r border-gray-200 text-gray-600">{u.email}</td>
-                    <td className="p-3 text-center">
+                    <td className="p-3 border-r border-gray-200 text-center">
                       <span
                         className={`text-xs px-2.5 py-0.5 rounded font-medium ${
                           u.role === 'admin'
@@ -177,6 +191,19 @@ export default function Staff() {
                       >
                         {u.role}
                       </span>
+                    </td>
+                    <td className="p-3 text-center">
+                      {u.role === 'admin' ? (
+                        <span className="text-xs text-gray-400">—</span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleRemove(u.id)}
+                          className="text-xs text-red-600 hover:text-red-800 font-semibold hover:underline cursor-pointer"
+                        >
+                          Remove
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}

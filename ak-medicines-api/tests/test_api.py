@@ -99,6 +99,11 @@ class InventoryTests(unittest.TestCase):
         data["email"] = "another@example.com"
         self.assertEqual(self.client.post("/api/users", json=data, headers={"Authorization": self.authorization("staff")}).status_code, 403)
 
+        user_id = response.get_json()["id"]
+        self.assertEqual(self.client.delete(f"/api/users/{user_id}", headers={"Authorization": self.authorization("staff")}).status_code, 403)
+        self.assertEqual(self.client.delete(f"/api/users/{user_id}").status_code, 200)
+        self.assertEqual(self.client.delete(f"/api/users/{user_id}").status_code, 404)
+
     def test_threshold_and_dummy_data(self):
         self.assertTrue(add_dummy_data())
         self.assertFalse(add_dummy_data())

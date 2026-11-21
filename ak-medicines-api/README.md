@@ -22,7 +22,9 @@ uv run python app.py
 | POST /api/transactions | Record RECEIVE or DISPENSE |
 | GET /api/vendors | Registered external suppliers and their formulations |
 | POST /api/vendors | Register an external supplier and supplied formulations |
+| GET /api/users | Admin-only: list all registered NGO user accounts |
 | POST /api/users | Admin-only: register an NGO user account |
+| DELETE /api/users/<id> | Admin-only: remove a staff user account |
 | GET /api/alerts | Low/depleted medicines with matching vendors |
 
 Create a medicine:
