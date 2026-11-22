@@ -134,7 +134,19 @@ export default function Inventory() {
         return;
       }
 
-      const dataLines = lines[0].toLowerCase().startsWith('name,') ? lines.slice(1) : lines;
+      const header = lines[0]
+        .split(',')
+        .map((c) => c.trim().replace(/^"|"$/g, '').toLowerCase());
+
+      if (header[0] !== 'name' || header[1] !== 'category' || header[2] !== 'salt_ingredients') {
+        setCsvError(
+          'Invalid CSV header. Expected columns: name,category,salt_ingredients,unit,min_threshold,initial_stock,party (Click "Download Sample CSV Template" above).'
+        );
+        setUploadingCsv(false);
+        return;
+      }
+
+      const dataLines = lines.slice(1);
       let importedCount = 0;
 
       for (const line of dataLines) {

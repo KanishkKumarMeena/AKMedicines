@@ -1,9 +1,11 @@
-from flask import Blueprint, abort, jsonify, request
+import threading
+from flask import Blueprint, abort, current_app, jsonify, request
 from sqlalchemy import select
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from config import db
 from api.auth import authenticate, create_token, require_roles
+from background.scheduler import run_alert_job
 from inventory import current_stock, inventory, low_stock_alerts, medicine_details, vendor_details
 from models import Medicine, Salt, Transaction, User, Vendor, normalize_salt
 from api.schema import LoginSchema, MedicineSchema, TransactionSchema, UserSchema, VendorSchema
@@ -94,8 +96,18 @@ def add_transaction():
     transaction = Transaction(**data)
     db.session.add(transaction)
     db.session.commit()
+    new_stock = current_stock(medicine.id)
     result = TransactionSchema().dump(transaction)
-    result["current_stock"] = current_stock(medicine.id)
+    result["current_stock"] = new_stock
+
+    if (
+        data["transaction_type"] == "DISPENSE"
+        and new_stock < medicine.min_threshold
+        and not current_app.config.get("TESTING")
+    ):
+        app_obj = current_app._get_current_object()
+        threading.Thread(target=run_alert_job, args=(app_obj,), daemon=True).start()
+
     return jsonify(result), 201
 
 
