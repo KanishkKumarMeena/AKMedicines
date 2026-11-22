@@ -30,6 +30,7 @@ class TransactionSchema(Schema):
     transaction_type = fields.String(required=True, validate=validate.OneOf(["RECEIVE", "DISPENSE"]))
     quantity = fields.Integer(required=True, strict=True, validate=validate.Range(min=1))
     party = fields.String(required=True, validate=[nonblank, validate.Length(max=150)])
+    logged_by = fields.String(dump_only=True)
     timestamp = fields.DateTime(dump_only=True)
 
 

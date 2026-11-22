@@ -29,6 +29,7 @@ function formatTransaction(tx) {
     type: tx.transaction_type,
     quantity: tx.quantity,
     sourceOrDest: tx.party,
+    loggedBy: tx.logged_by || 'admin',
     timestamp: tx.timestamp,
   };
 }

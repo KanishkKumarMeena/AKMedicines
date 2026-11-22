@@ -35,6 +35,7 @@ class Transaction(db.Model):
     transaction_type = db.Column(db.String(10), nullable=False)
     quantity = db.Column(db.Integer, nullable=False)
     party = db.Column(db.String(150), nullable=False)
+    logged_by = db.Column(db.String(50), nullable=False, default="admin")
     timestamp = db.Column(db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
     medicine = db.relationship("Medicine", back_populates="transactions")
     __table_args__ = (

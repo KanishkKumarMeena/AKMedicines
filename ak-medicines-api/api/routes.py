@@ -1,5 +1,5 @@
 import threading
-from flask import Blueprint, abort, current_app, jsonify, request
+from flask import Blueprint, abort, current_app, g, jsonify, request
 from sqlalchemy import select
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -58,7 +58,15 @@ def add_medicine():
     db.session.flush()
 
     if initial_stock:
-        db.session.add(Transaction(medicine_id=medicine.id, transaction_type="RECEIVE", quantity=initial_stock, party=party))
+        db.session.add(
+            Transaction(
+                medicine_id=medicine.id,
+                transaction_type="RECEIVE",
+                quantity=initial_stock,
+                party=party,
+                logged_by=getattr(g, "current_user", "admin"),
+            )
+        )
     db.session.commit()
 
     return jsonify(medicine_details(medicine, initial_stock)), 201
@@ -93,7 +101,7 @@ def add_transaction():
     if data["transaction_type"] == "DISPENSE" and data["quantity"] > stock:
         abort(409, description="Dispense quantity exceeds current stock.")
 
-    transaction = Transaction(**data)
+    transaction = Transaction(logged_by=getattr(g, "current_user", "admin"), **data)
     db.session.add(transaction)
     db.session.commit()
     new_stock = current_stock(medicine.id)

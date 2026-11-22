@@ -82,6 +82,19 @@ export default function Transactions() {
     }
   };
 
+  const getSupplierForTx = (tx, med) => {
+    if (tx.type === 'RECEIVE') return tx.sourceOrDest;
+    const lastReceive = transactions.find(
+      (t) => Number(t.medicineId) === Number(tx.medicineId) && t.type === 'RECEIVE'
+    );
+    if (lastReceive) return lastReceive.sourceOrDest;
+    const medSalt = normalizeSalt(med?.salts);
+    const matchedVendor = vendors.find((v) =>
+      (v.salt_ingredients || []).some((s) => normalizeSalt(s) === medSalt)
+    );
+    return matchedVendor?.name || 'Direct Aid Supplier';
+  };
+
   const handleExportCSV = () => {
     const escapeCell = (val) => `"${String(val ?? '').replace(/"/g, '""')}"`;
     const headers = [
@@ -92,11 +105,15 @@ export default function Transactions() {
       'Active Salt',
       'Quantity',
       'Unit',
-      'Supplier / Destination',
+      'Sold By (Supplier)',
+      'Clinic Destination / Party',
+      'Logged By',
     ];
 
     const rows = transactions.map((tx) => {
       const med = medicines.find((m) => Number(m.id) === Number(tx.medicineId));
+      const soldBy = getSupplierForTx(tx, med);
+      const destination = tx.type === 'DISPENSE' ? tx.sourceOrDest : 'NGO Warehouse Intake';
       return [
         tx.id,
         tx.timestamp,
@@ -105,7 +122,9 @@ export default function Transactions() {
         med?.salts || '',
         tx.type === 'RECEIVE' ? `+${tx.quantity}` : `-${tx.quantity}`,
         med?.unit || 'Tablets',
-        tx.sourceOrDest,
+        soldBy,
+        destination,
+        tx.loggedBy || 'admin',
       ].map(escapeCell).join(',');
     });
 
@@ -290,20 +309,22 @@ export default function Transactions() {
               </button>
             </div>
             <div className="overflow-x-auto max-h-[550px] overflow-y-auto">
-              <table className="w-full text-left text-sm border-collapse border border-gray-200 min-w-[550px]">
+              <table className="w-full text-left text-sm border-collapse border border-gray-200 min-w-[650px]">
                 <thead className="bg-gray-100 text-gray-700 font-semibold border-b border-gray-200 sticky top-0 whitespace-nowrap">
                   <tr>
                     <th className="p-2 border border-gray-200">Date/Time</th>
                     <th className="p-2 border border-gray-200">Type</th>
                     <th className="p-2 border border-gray-200">Medicine</th>
                     <th className="p-2 border border-gray-200 text-right">Qty</th>
-                    <th className="p-2 border border-gray-200">Source / Destination</th>
+                    <th className="p-2 border border-gray-200">Sold By (Supplier)</th>
+                    <th className="p-2 border border-gray-200">Destination / Staff</th>
                   </tr>
                 </thead>
                 <tbody>
                   {transactions.map((tx) => {
-                    const med = medicines.find((m) => m.id === tx.medicineId);
+                    const med = medicines.find((m) => Number(m.id) === Number(tx.medicineId));
                     const isReceive = tx.type === 'RECEIVE';
+                    const soldBy = getSupplierForTx(tx, med);
                     const formattedDate = new Date(tx.timestamp).toLocaleString('en-US', {
                       month: 'short',
                       day: 'numeric',
@@ -313,7 +334,7 @@ export default function Transactions() {
 
                     return (
                       <tr key={tx.id} className="border-b border-gray-200 hover:bg-gray-50">
-                        <td className="p-2 border border-gray-200 text-xs text-gray-600">{formattedDate}</td>
+                        <td className="p-2 border border-gray-200 text-xs text-gray-600 whitespace-nowrap">{formattedDate}</td>
                         <td className="p-2 border border-gray-200">
                           <span
                             className={`text-xs px-2 py-0.5 rounded font-medium ${isReceive
@@ -328,14 +349,18 @@ export default function Transactions() {
                           {med?.name || 'Unknown'}
                         </td>
                         <td
-                          className={`p-2 border border-gray-200 text-right font-mono font-bold ${isReceive ? 'text-green-700' : 'text-orange-700'
+                          className={`p-2 border border-gray-200 text-right font-mono font-bold whitespace-nowrap ${isReceive ? 'text-green-700' : 'text-orange-700'
                             }`}
                         >
                           {isReceive ? '+' : '-'}
                           {tx.quantity}
                         </td>
-                        <td className="p-2 border border-gray-200 text-xs text-gray-700">
-                          {tx.sourceOrDest}
+                        <td className="p-2 border border-gray-200 text-xs font-medium text-gray-800">
+                          {soldBy}
+                        </td>
+                        <td className="p-2 border border-gray-200 text-xs text-gray-600">
+                          <div>{isReceive ? 'NGO Warehouse Intake' : tx.sourceOrDest}</div>
+                          <div className="text-[11px] text-gray-400">Logged by: {tx.loggedBy || 'admin'}</div>
                         </td>
                       </tr>
                     );

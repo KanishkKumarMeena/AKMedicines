@@ -10,7 +10,15 @@ export default function Dashboard() {
   const totalUnits = medicines.reduce((acc, m) => acc + (m.currentStock > 0 ? m.currentStock : 0), 0);
   const totalTransactions = transactions.length;
 
-  const recentTransactions = transactions.slice(0, 5);
+  const recentTransactions = transactions.slice(0, 6);
+
+  const getSupplierForTx = (tx) => {
+    if (tx.type === 'RECEIVE') return tx.sourceOrDest;
+    const lastReceive = transactions.find(
+      (t) => Number(t.medicineId) === Number(tx.medicineId) && t.type === 'RECEIVE'
+    );
+    return lastReceive?.sourceOrDest || 'Direct Aid Supplier';
+  };
 
   return (
     <div>
@@ -88,20 +96,22 @@ export default function Dashboard() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm border-collapse border border-gray-200 min-w-[500px]">
+          <table className="w-full text-left text-sm border-collapse border border-gray-200 min-w-[600px]">
             <thead className="bg-gray-100 text-gray-700 font-semibold border-b border-gray-200 whitespace-nowrap">
               <tr>
                 <th className="p-2.5 border border-gray-200">Date</th>
                 <th className="p-2.5 border border-gray-200">Type</th>
                 <th className="p-2.5 border border-gray-200">Medicine</th>
                 <th className="p-2.5 border border-gray-200 text-right">Quantity</th>
-                <th className="p-2.5 border border-gray-200">Donor / Destination</th>
+                <th className="p-2.5 border border-gray-200">Sold By (Supplier)</th>
+                <th className="p-2.5 border border-gray-200">Destination / Staff</th>
               </tr>
             </thead>
             <tbody>
               {recentTransactions.map((tx) => {
-                const med = medicines.find((m) => m.id === tx.medicineId);
+                const med = medicines.find((m) => Number(m.id) === Number(tx.medicineId));
                 const isReceive = tx.type === 'RECEIVE';
+                const soldBy = getSupplierForTx(tx);
                 const formattedDate = new Date(tx.timestamp).toLocaleDateString('en-US', {
                   month: 'short',
                   day: 'numeric',
@@ -130,7 +140,13 @@ export default function Dashboard() {
                       {isReceive ? '+' : '-'}
                       {tx.quantity} {med?.unit || ''}
                     </td>
-                    <td className="p-2.5 border border-gray-200 text-gray-600">{tx.sourceOrDest}</td>
+                    <td className="p-2.5 border border-gray-200 text-gray-800 font-medium text-xs">
+                      {soldBy}
+                    </td>
+                    <td className="p-2.5 border border-gray-200 text-gray-600 text-xs">
+                      <div>{isReceive ? 'NGO Warehouse Intake' : tx.sourceOrDest}</div>
+                      <div className="text-[11px] text-gray-400">Logged by: {tx.loggedBy || 'admin'}</div>
+                    </td>
                   </tr>
                 );
               })}

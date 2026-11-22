@@ -107,8 +107,8 @@ class InventoryTests(unittest.TestCase):
     def test_threshold_and_dummy_data(self):
         self.assertTrue(add_dummy_data())
         self.assertFalse(add_dummy_data())
-        self.assertEqual(len(self.client.get("/api/medicines").get_json()), 3)
-        self.assertEqual(len(self.client.get("/api/alerts").get_json()), 2)
+        self.assertEqual(len(self.client.get("/api/medicines").get_json()), 10)
+        self.assertEqual(len(self.client.get("/api/alerts").get_json()), 5)
 
         medicine = self.add_medicine(initial_stock=25).get_json()
         self.assertEqual(medicine["status"], "ample")
