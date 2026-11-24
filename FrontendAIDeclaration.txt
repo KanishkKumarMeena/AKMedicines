@@ -1,0 +1,21 @@
+AI (Google Gemini Web Chat — https://share.gemini.google/wvfYyaxn7Q3Z) was used for the frontend, deployment, and documentation in the following areas:
+
+1. ak-medicines-ui/src/pages/Dashboard.jsx and ak-medicines-ui/src/App.jsx
+
+The initial React + Vite + Tailwind CSS project setup, basic React Router structure in App.jsx, and the initial Dashboard.jsx layout/table markup were generated with help from Gemini chat.
+The remaining pages (Inventory.jsx, Transactions.jsx, Alerts.jsx, Login.jsx, and Staff.jsx) were created by me by modifying, updating, and extending parts of that base layout and Tailwind styling to fit our project workflows.
+
+
+2. ak-medicines-ui/src/assets/AK.svg
+
+The project logo (AK.svg) was generated using Gemini.
+
+
+3. ak-medicines-api/app.py (Render Deployment Static Serving)
+
+To deploy both the React frontend and Flask backend on a single Render Web Service without CORS issues, I used Gemini chat for the route logic (serve_frontend using send_from_directory) that serves the built ak-medicines-ui/dist files for non-/api routes.
+
+
+4. Planning, Documentation, and Presentation (README.md, AKMedicines.pdf)
+
+Gemini chat was used for initial two-person workload planning, reviewing the mid-project report and final presentation slides, and generating the Mermaid.js flowchart syntax for the architecture diagram.

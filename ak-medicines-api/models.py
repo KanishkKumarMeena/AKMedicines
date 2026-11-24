@@ -27,6 +27,7 @@ class Medicine(db.Model):
     __table_args__ = (db.CheckConstraint("min_threshold >= 0"),)
 
 
+
 class Transaction(db.Model):
     __tablename__ = "transactions"
 
